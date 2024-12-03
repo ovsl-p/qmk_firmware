@@ -92,13 +92,42 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [NUMPAD]   = { ENCODER_CCW_CW(RM_VALD, RM_VALU), ENCODER_CCW_CW(RM_VALD, RM_VALU) }
 };
 #endif // ENCODER_MAP_ENABLE
-
+uint8_t mod_state;
+static bool bspckey_registered = false;
+static bool ctrl_pressed = false;
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (keycode == SINGLE_ARROW && record->event.pressed) {
-        SEND_STRING("->");
-    }
-    if (keycode == DOUBLE_ARROW && record->event.pressed) {
-        SEND_STRING("=>");
+    mod_state = get_mods();
+    switch (keycode) {
+        case SINGLE_ARROW:
+            if (record->event.pressed) {
+                SEND_STRING("->");
+            }
+            return false;
+        case DOUBLE_ARROW:
+            if (record->event.pressed) {
+                SEND_STRING("=>");
+            }
+            return false;
+        case KC_H:
+            if (record->event.pressed) {
+                if (mod_state & MOD_MASK_CTRL) {
+                    // ctrl + hを押した時、backspaceだけを送信
+                    unregister_code(KC_LCTL);
+                    register_code(KC_BSPC);
+                    bspckey_registered = true;
+                    return false;
+                }
+            } else {
+                if (bspckey_registered) {
+                    // backspaceを連続で送信しない
+                    unregister_code(KC_BSPC);
+                    unregister_code(KC_LCTL);
+                    bspckey_registered = false;
+                }
+                if (ctrl_pressed) {
+                    register_code(KC_LCTL);
+                }
+            }
     }
     return true;
 };
