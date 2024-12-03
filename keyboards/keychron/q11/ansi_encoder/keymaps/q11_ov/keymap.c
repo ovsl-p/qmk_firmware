@@ -93,8 +93,6 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 };
 #endif // ENCODER_MAP_ENABLE
 uint8_t mod_state;
-static bool bspckey_registered = false;
-static bool ctrl_pressed = false;
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     mod_state = get_mods();
     switch (keycode) {
@@ -109,23 +107,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         case KC_H:
+            static bool bspckey_registered = false;
             if (record->event.pressed) {
                 if (mod_state & MOD_MASK_CTRL) {
                     // ctrl + hを押した時、backspaceだけを送信
-                    unregister_code(KC_LCTL);
+                    del_mods(MOD_MASK_CTRL);
                     register_code(KC_BSPC);
                     bspckey_registered = true;
+                    // ctrlだけを押した状態にする
+                    set_mods(mod_state);
                     return false;
                 }
             } else {
                 if (bspckey_registered) {
                     // backspaceを連続で送信しない
                     unregister_code(KC_BSPC);
-                    unregister_code(KC_LCTL);
                     bspckey_registered = false;
-                }
-                if (ctrl_pressed) {
-                    register_code(KC_LCTL);
+                    return false;
                 }
             }
     }
